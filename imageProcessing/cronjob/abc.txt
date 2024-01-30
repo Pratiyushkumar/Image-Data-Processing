@@ -1,0 +1,50 @@
+const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
+const fs = require('fs');
+const path = require('path');
+const firestoreImageData2 = require('./firestoreImageData');
+// const dataPath = require("../images")
+
+const bucketName = process.env.BUCKET_NAME;
+const buckeRegion = process.env.BUCKET_REGION;
+const accessKey = process.env.ACCESS_KEY;
+const secretAccesskey = process.env.SECRET_ACCESS_KEY;
+
+// const imagePath = `C:/Users/prati/Desktop/Projects/CodeWithPK/imageProcessing/imageProcessing/images`;
+const imagePath = '../images';
+
+(async () => {
+  if (fs.existsSync(path.resolve(imagePath))) {
+    const files = fs.readdir(imagePath);
+    const imageFilePromise = files.map((image) => firestoreImageData2(image));
+    const results = await Promise.all(imageFilePromise);
+    console.log(results);
+    if (!results) process.exit(1);
+    for (const result of results) {
+      if (!result) continue;
+      const s3 = new S3Client({
+        credentials: {
+          accessKeyId: accessKey,
+          secretAccessKey: secretAccesskey,
+        },
+        region: buckeRegion,
+      });
+      for (const file of files) {
+        console.log('file', file);
+        // const imagePaths = `C:/Users/prati/Desktop/Projects/CodeWithPK/imageProcessing/imageProcessing/images/${file}`;
+        const imagePaths = `../images/${file}`;
+        console.log(imagePaths);
+        const params = {
+          Bucket: bucketName,
+          Key: file,
+          Body: fs.readFileSync(imagePaths),
+        };
+        const command = new PutObjectCommand(params);
+        await s3.send(command);
+      }
+      process.exit(0);
+    }
+  } else {
+    console.error('Failed to load images...', imagePath);
+    process.exit(1);
+  }
+})();

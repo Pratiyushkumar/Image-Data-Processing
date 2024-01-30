@@ -6,13 +6,14 @@ async function uploadImage() {
   try {
     const imagePath = './images';
     fs.readdir(imagePath, (err, files) => {
+      console.log(files);
       if (err) {
         console.log('Error reading image folder:', err);
       } else {
         files.forEach(async (image) => {
           const ImageData = await firestoreImageData(image);
           if (ImageData) {
-            await imageProcessing(file);
+            await imageProcessing(image);
             return { message: 'Data Inserted in db' };
           } else {
             return { message: 'Data already present in db' };
